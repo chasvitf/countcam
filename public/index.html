@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CountCam · AI นับรถและคนจากกล้อง</title>
+  <meta name="description" content="เดโม AI ตรวจจับและนับรถ รถสองล้อ และคน จากรูป วิดีโอ หรือเว็บแคม ประมวลผลในเบราว์เซอร์ ภาพไม่ถูกส่งขึ้นเซิร์ฟเวอร์">
+  <meta name="theme-color" content="#0e1116">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CountCam · AI นับรถและคนจากกล้อง">
+  <meta property="og:description" content="ตรวจจับวัตถุ ติดตามรถทีละคัน นับเมื่อข้ามเส้น และส่งออก CSV ประมวลผลในเบราว์เซอร์ทั้งหมด">
+  <meta property="og:image" content="https://countcam.vercel.app/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="logo" aria-hidden="true"></span>CountCam</div>
+    <p class="tag">AI ตรวจจับและนับรถ/คนจากกล้อง · ประมวลผลบนเครื่องคุณ ภาพไม่ถูกส่งออกไปไหน</p>
+  </header>
+
+  <main class="layout">
+    <section class="stage-wrap">
+      <div class="sources">
+        <button data-src="video">วิดีโอสี่แยก</button>
+        <button data-src="image">รูปถ่ายถนน</button>
+        <button data-src="upload">อัปโหลดไฟล์</button>
+        <button data-src="webcam">เว็บแคม</button>
+        <input id="file" type="file" accept="image/*,video/*" hidden>
+      </div>
+
+      <div class="stage">
+        <video id="video" muted playsinline></video>
+        <img id="image" alt="ภาพที่กำลังวิเคราะห์" hidden>
+        <canvas id="overlay"></canvas>
+        <div class="status" id="status" role="status">กำลังโหลดโมเดล AI…</div>
+        <button class="replay" id="replay" hidden>เล่นอีกครั้ง</button>
+      </div>
+
+      <div class="thumbs" id="thumbs" hidden></div>
+
+      <div class="controls">
+        <label>ความมั่นใจขั้นต่ำ <output id="thrOut">35%</output>
+          <input id="thr" type="range" min="20" max="90" value="35">
+        </label>
+        <label class="check only-still"><input id="tiled" type="checkbox" checked> โหมดละเอียด (แบ่งภาพเป็นส่วน จับรถคันเล็กได้ดีขึ้น)</label>
+        <label class="check only-motion"><input id="lineOn" type="checkbox" checked> นับเมื่อข้ามเส้น</label>
+        <button id="resetLine" class="ghost only-motion">คืนค่าเส้น</button>
+        <button id="csv" class="ghost">ดาวน์โหลด CSV</button>
+      </div>
+      <p class="hint only-motion">ลากบนภาพเพื่อวาดเส้นนับใหม่ รถแต่ละคันมีหมายเลขประจำตัว และถูกนับครั้งเดียวเมื่อวิ่งผ่านเส้น</p>
+    </section>
+
+    <aside class="panel">
+      <h2>ตอนนี้ในภาพ <span class="total" id="nowTotal"></span></h2>
+      <ul class="counts" id="now"></ul>
+
+      <div id="crossedBox">
+        <h2>ข้ามเส้นสะสม</h2>
+        <ul class="counts big" id="crossed"></ul>
+        <ul class="log" id="log"></ul>
+      </div>
+
+      <h2>ประเภทที่จะนับ</h2>
+      <div class="classes" id="classes"></div>
+
+      <dl class="meta">
+        <dt>โมเดล</dt><dd>YOLO11n (COCO) · ONNX Runtime Web</dd>
+        <dt>ความเร็ว</dt><dd id="fps">–</dd>
+        <dt>ประมวลผลด้วย</dt><dd id="delegate">–</dd>
+      </dl>
+    </aside>
+  </main>
+
+  <footer class="foot">
+    <p>เขียนด้วย JavaScript + YOLO11 + ONNX Runtime Web โดย <a href="https://fastwork.co/user/chasvitf" target="_blank" rel="noopener">Chanavee · รับทำ AI Computer Vision บน Fastwork</a> · <a href="https://github.com/chasvitf/countcam" target="_blank" rel="noopener">ซอร์สโค้ด</a></p>
+    <p class="credit">สื่อตัวอย่างจาก Wikimedia Commons: วิดีโอ <a href="https://commons.wikimedia.org/wiki/File:A_intersection_with_traffic_in_Chiang_Mai,_Thailand.ogv" target="_blank" rel="noopener">“A intersection with traffic in Chiang Mai, Thailand”</a> โดย Amada44 (CC BY-SA 4.0, ย่อขนาดและแปลงไฟล์) · ภาพถนนกรุงเทพฯ โดย Peter Hershey และ Bernard Spragg (CC0)</p>
+  </footer>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
