@@ -1,5 +1,5 @@
 import { Detector } from "./detector.js";
-import { Tracker, crossedLine, mergeDetections, removeRiders } from "./tracker.js";
+import { Tracker, crossedLine, markRiders, mergeDetections, removeRiders } from "./tracker.js";
 
 const MODEL = "/models/yolo11n.onnx";
 
@@ -52,7 +52,9 @@ const state = {
 
 async function loadDetector() {
   state.detector = await Detector.load(MODEL, (p) => setStatus(`กำลังโหลดโมเดล AI… ${Math.round(p * 100)}%`));
-  $("delegate").textContent = state.detector.backend === "webgpu" ? "การ์ดจอ (WebGPU)" : "CPU (WebAssembly)";
+  $("delegate").textContent = state.detector.backend === "webgpu"
+    ? "การ์ดจอ (WebGPU)"
+    : "CPU (WebAssembly) · เล่นวิดีโอช้าลงครึ่งหนึ่งเพื่อให้นับได้แม่น";
 }
 
 function buildClassToggles() {
@@ -101,6 +103,9 @@ async function showVideo(src) {
     state.stream = src;
   } else {
     video.src = src;
+    // On the CPU the model sees few frames per second; play files at half
+    // speed so the tracker still gets enough frames per car.
+    video.defaultPlaybackRate = video.playbackRate = state.detector?.backend === "wasm" ? 0.5 : 1;
   }
   state.lastVideoTime = -1;
   resetCounting();
@@ -219,8 +224,9 @@ async function tick() {
 
   state.busy = true;
   const ts = performance.now();
+  let dets;
   try {
-    state.detections = visible(removeRiders(await state.detector.detect(video)));
+    dets = visible(markRiders(await state.detector.detect(video)));
   } catch (err) {
     console.error("CountCam:", err);
     return;
@@ -228,7 +234,8 @@ async function tick() {
     state.busy = false;
   }
   if (isStill()) return;   // the source changed while the model was running
-  state.tracks = state.tracker.update(state.detections);
+  state.tracks = state.tracker.update(dets);
+  state.detections = state.tracks;
   if (state.lineOn) countCrossings(state.tracks);
 
   const now = performance.now();

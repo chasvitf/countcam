@@ -53,13 +53,19 @@ export function mergeDetections(dets, maxIou = 0.45, maxInside = 0.7) {
   return kept;
 }
 
-// A person on a motorbike is the rider, not a pedestrian: drop people whose
-// box overlaps a two-wheeler so they are not counted twice.
-export function removeRiders(dets) {
+// A person on a motorbike is the rider, not a pedestrian. markRiders flags
+// people whose box overlaps a two-wheeler; the tracker remembers the flag, so
+// a rider stays a rider in frames where the bike itself is missed.
+export function markRiders(dets) {
   const bikes = dets.filter((d) => d.cls === "twowheel");
-  if (!bikes.length) return dets;
-  return dets.filter((d) => d.cls !== "person" ||
-    !bikes.some((b) => intersection(d.box, b.box) / area(d.box) > 0.25));
+  for (const d of dets) {
+    if (d.cls === "person") d.rider = bikes.some((b) => intersection(d.box, b.box) / area(d.box) > 0.25);
+  }
+  return dets;
+}
+
+export function removeRiders(dets) {
+  return markRiders(dets).filter((d) => !d.rider);
 }
 
 export class Tracker {
@@ -94,6 +100,7 @@ export class Tracker {
       t.box = d.box;
       t.score = d.score;
       t.missed = 0;
+      t.rider ||= !!d.rider;
       t.votes[d.cls] = (t.votes[d.cls] || 0) + 1;
       t.cls = Object.entries(t.votes).sort((p, q) => q[1] - p[1])[0][0];
       t.history.push(center(d.box));
@@ -107,11 +114,11 @@ export class Tracker {
       if (usedD.has(di)) return;
       this.tracks.push({
         id: this.nextId++, cls: d.cls, score: d.score, box: d.box,
-        votes: { [d.cls]: 1 }, history: [center(d.box)], missed: 0, counted: false, flash: 0,
+        votes: { [d.cls]: 1 }, history: [center(d.box)], missed: 0, counted: false, flash: 0, rider: !!d.rider,
       });
     });
 
-    return this.tracks.filter((t) => t.missed === 0);
+    return this.tracks.filter((t) => t.missed === 0 && !t.rider);
   }
 }
 
